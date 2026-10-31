@@ -1,0 +1,29 @@
+name: Garmin daily sync
+
+on:
+  schedule:
+    - cron: "17 13 * * *"   # 6:17 am Pacific (PDT); 5:17 am in winter
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: garmin-sync
+  cancel-in-progress: false   # never run two at once, or the rotated token could be lost
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install --require-hashes -r garmin/requirements.txt
+      - run: python garmin/garmin_sync.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GARMIN_TOKENS_SEED: ${{ secrets.GARMIN_TOKENS_SEED }}
